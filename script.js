@@ -8,7 +8,6 @@ async function performDuckDuckGoSearch(query) {
             throw new Error(`Error fetching DuckDuckGo results: ${response.statusText}`);
         }
         const data = await response.json();
-
         return data.RelatedTopics.map(item => ({
             title: item.Text || 'No Title',
             link: item.FirstURL || '#',
@@ -22,7 +21,7 @@ async function performDuckDuckGoSearch(query) {
 
 // Function to perform an OpenWeatherMap search
 async function performWeatherSearch(query) {
-    const apiKey = 'adc79596d4cb3d6f066e02c4d8299381'; // Your API key
+    const apiKey = 'adc79596d4cb3d6f066e02c4d8299381'; // Your OpenWeatherMap API key
     const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(query)}&appid=${apiKey}&units=metric`;
 
     try {
@@ -31,7 +30,9 @@ async function performWeatherSearch(query) {
             throw new Error(`Error fetching weather results: ${response.statusText}`);
         }
         const data = await response.json();
-
+        if (data.cod !== 200) {
+            throw new Error(`Weather not found: ${data.message}`);
+        }
         return [{
             title: `Weather in ${data.name}`,
             link: `https://openweathermap.org/city/${data.id}`,
@@ -48,21 +49,26 @@ async function performWeatherSearch(query) {
     }
 }
 
-// Function to perform a Cat API search
-async function performCatSearch() {
-    const url = `https://api.thecatapi.com/v1/images/search?limit=3`;
+// Function to perform a Pexels search for images
+async function performPexelsSearch(query) {
+    const apiKey = 'JkDws49MMVZSgKZYndc2IJSLxo5fNkya10Nc8omfzoCbXebWTsM7c6KI'; // Your Pexels API key
+    const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=5`;
 
     try {
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            headers: {
+                Authorization: apiKey
+            }
+        });
         if (!response.ok) {
-            throw new Error(`Error fetching cat images: ${response.statusText}`);
+            throw new Error(`Error fetching Pexels images: ${response.statusText}`);
         }
         const data = await response.json();
-
-        return data.map(item => ({
-            title: 'Cat Image',
+        return data.photos.map(item => ({
+            title: item.alt_description || 'Image',
             link: item.url,
-            snippet: 'Here is a random cat for you!'
+            snippet: 'Related image from Pexels.',
+            picture: item.src.medium // Use the medium size image
         }));
     } catch (error) {
         console.error(error);
@@ -70,21 +76,43 @@ async function performCatSearch() {
     }
 }
 
-// Function to perform a Dog API search
-async function performDogSearch() {
-    const url = `https://dog.ceo/api/breeds/image/random/3`;
+// Function to perform a News API search
+async function performNewsSearch(query) {
+    const apiKey = '84086ac217184b93ae34a9151618ffd8'; // Your News API key
+    const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&apiKey=${apiKey}`;
 
     try {
         const response = await fetch(url);
         if (!response.ok) {
-            throw new Error(`Error fetching dog images: ${response.statusText}`);
+            throw new Error(`Error fetching news results: ${response.statusText}`);
         }
         const data = await response.json();
+        return data.articles.map(item => ({
+            title: item.title,
+            link: item.url,
+            snippet: item.description
+        }));
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+}
 
-        return data.message.map(item => ({
-            title: 'Dog Image',
-            link: item,
-            snippet: 'Here is a random dog for you!'
+// Function to fetch random user data
+async function performRandomUserSearch() {
+    const url = `https://randomuser.me/api/`;
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Error fetching random user data: ${response.statusText}`);
+        }
+        const data = await response.json();
+        return data.results.map(user => ({
+            name: `${user.name.first} ${user.name.last}`,
+            email: user.email,
+            picture: user.picture.large,
+            link: `https://randomuser.me/?id=${user.login.uuid}` // Link to the user's profile
         }));
     } catch (error) {
         console.error(error);
@@ -101,8 +129,9 @@ async function handleSearch(event) {
     // Perform searches
     const ddgResults = await performDuckDuckGoSearch(query);
     const weatherResults = await performWeatherSearch(query);
-    const catResults = await performCatSearch();
-    const dogResults = await performDogSearch();
+    const pexelsResults = await performPexelsSearch(query);
+    const newsResults = await performNewsSearch(query);
+    const randomUserResults = await performRandomUserSearch();
 
     // Display results
     const resultsContainer = document.getElementById('results');
@@ -111,8 +140,9 @@ async function handleSearch(event) {
     const allResults = {
         DuckDuckGo: ddgResults,
         Weather: weatherResults,
-        Cat: catResults,
-        Dog: dogResults
+        Images: pexelsResults,
+        News: newsResults,
+        RandomUser: randomUserResults
     };
 
     Object.keys(allResults).forEach(source => {
@@ -120,10 +150,10 @@ async function handleSearch(event) {
         if (results.length > 0) {
             const resultsHtml = results.map(result => `
                 <div class="result-item">
-                    <a href="${result.link}" target="_blank">${result.title}</a>
-                    <p>${result.snippet || 'No additional information available.'}</p>
+                    <a href="${result.link}" target="_blank">${result.title || result.name}</a>
+                    <p>${result.snippet || result.email || 'No additional information available.'}</p>
                     ${result.icon ? `<img src="${result.icon}" alt="Weather icon" class="result-image" />` : ''}
-                    ${result.link.endsWith('.jpg') || result.link.endsWith('.png') ? `<img src="${result.link}" alt="${result.title}" class="result-image" />` : ''}
+                    ${result.picture ? `<img src="${result.picture}" alt="${result.name}" class="result-image" />` : ''}
                 </div>`).join('');
             resultsContainer.innerHTML += `<h2>${source} Results:</h2><div class="results-list">${resultsHtml}</div>`;
         } else {
