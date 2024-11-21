@@ -49,10 +49,10 @@ async function performWeatherSearch(query) {
     }
 }
 
-// Function to perform a Pexels search for images
+// Updated Function to perform a Pexels search for images (Step 1)
 async function performPexelsSearch(query) {
     const apiKey = 'JkDws49MMVZSgKZYndc2IJSLxo5fNkya10Nc8omfzoCbXebWTsM7c6KI'; // Your Pexels API key
-    const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=5`;
+    const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=10`;
 
     try {
         const response = await fetch(url, {
@@ -64,12 +64,16 @@ async function performPexelsSearch(query) {
             throw new Error(`Error fetching Pexels images: ${response.statusText}`);
         }
         const data = await response.json();
-        return data.photos.map(item => ({
-            title: item.alt_description || 'Image',
-            link: item.url,
-            snippet: 'Related image from Pexels.',
-            picture: item.src.medium // Use the medium size image
-        }));
+
+        // Filter images to ensure relevance to the search query
+        return data.photos
+            .filter(item => item.alt && item.alt.toLowerCase().includes(query.toLowerCase())) // Ensure alt description contains the query
+            .map(item => ({
+                title: item.alt || 'Image',
+                link: item.url,
+                snippet: 'Related image from Pexels.',
+                picture: item.src.medium // Use the medium size image
+            }));
     } catch (error) {
         console.error(error);
         return [];
@@ -197,3 +201,4 @@ function hideLoader() {
 
 // Call displaySearchHistory on page load
 document.addEventListener('DOMContentLoaded', displaySearchHistory);
+
