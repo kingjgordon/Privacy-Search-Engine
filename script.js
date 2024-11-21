@@ -33,10 +33,14 @@ async function performWeatherSearch(query) {
         if (data.cod !== 200) {
             throw new Error(`Weather not found: ${data.message}`);
         }
+
+        // Convert Celsius to Fahrenheit
+        const temperatureFahrenheit = convertCelsiusToFahrenheit(data.main.temp);
+        
         return [{
             title: `Weather in ${data.name}`,
             link: `https://openweathermap.org/city/${data.id}`,
-            snippet: `Temperature: ${data.main.temp}°C, Condition: ${data.weather[0].description}.`,
+            snippet: `Temperature: ${temperatureFahrenheit.toFixed(1)}°F, Condition: ${data.weather[0].description}.`,
             icon: `http://openweathermap.org/img/wn/${data.weather[0].icon}.png` // Weather icon
         }];
     } catch (error) {
@@ -49,7 +53,12 @@ async function performWeatherSearch(query) {
     }
 }
 
-// Updated Function to perform a Pexels search for images (Step 1)
+// Convert Celsius to Fahrenheit
+function convertCelsiusToFahrenheit(celsius) {
+    return (celsius * 9/5) + 32;
+}
+
+// Updated Function to perform a Pexels search for images
 async function performPexelsSearch(query) {
     const apiKey = 'JkDws49MMVZSgKZYndc2IJSLxo5fNkya10Nc8omfzoCbXebWTsM7c6KI'; // Your Pexels API key
     const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=10`;
@@ -65,7 +74,6 @@ async function performPexelsSearch(query) {
         }
         const data = await response.json();
 
-        // Filter images to ensure relevance to the search query
         return data.photos
             .filter(item => item.alt && item.alt.toLowerCase().includes(query.toLowerCase())) // Ensure alt description contains the query
             .map(item => ({
@@ -152,16 +160,16 @@ async function handleSearch(event) {
     Object.keys(allResults).forEach(source => {
         const results = allResults[source];
         if (results.length > 0) {
-            const resultsHtml = results.map(result => `
-                <div class="result-item">
+            const resultsHtml = results.map(result =>
+                `<div class="result-item">
                     <a href="${result.link}" target="_blank">${result.title || result.name}</a>
                     <p>${result.snippet || result.email || 'No additional information available.'}</p>
-                    ${result.icon ? `<img src="${result.icon}" alt="Weather icon" class="result-image" />` : ''}
-                    ${result.picture ? `<img src="${result.picture}" alt="${result.name}" class="result-image" />` : ''}
-                </div>`).join('');
-            resultsContainer.innerHTML += `<h2>${source} Results:</h2><div class="results-list">${resultsHtml}</div>`;
-        } else {
-            resultsContainer.innerHTML += `<h2>${source} Results:</h2><p>No results found.</p>`;
+                    ${result.icon ? `<img src="${result.icon}" alt="Weather icon">` : ''}
+                    ${result.picture ? `<img src="${result.picture}" alt="${result.title}">` : ''}
+                </div>`
+            ).join('');
+            const sectionTitle = `<h3>${source}</h3>`;
+            resultsContainer.innerHTML += sectionTitle + resultsHtml;
         }
     });
 
@@ -169,36 +177,47 @@ async function handleSearch(event) {
     saveSearchHistory(query);
 }
 
-// Function to save search history
-function saveSearchHistory(query) {
-    let history = JSON.parse(localStorage.getItem('searchHistory')) || [];
-    if (!history.includes(query)) {
-        history.push(query);
-        localStorage.setItem('searchHistory', JSON.stringify(history));
-    }
-}
-
-// Function to display search history
-function displaySearchHistory() {
-    const historyContainer = document.getElementById('searchHistory');
-    const history = JSON.parse(localStorage.getItem('searchHistory')) || [];
-    if (history.length > 0) {
-        historyContainer.innerHTML = `<h2>Search History:</h2><ul>${history.map(query => `<li>${query}</li>`).join('')}</ul>`;
-    } else {
-        historyContainer.innerHTML = '<h2>No search history found.</h2>';
-    }
-}
-
-// Function to show the loading spinner
+// Function to show the loader during search
 function showLoader() {
     document.getElementById('loader').style.display = 'block';
 }
 
-// Function to hide the loading spinner
+// Function to hide the loader after search
 function hideLoader() {
     document.getElementById('loader').style.display = 'none';
 }
 
-// Call displaySearchHistory on page load
-document.addEventListener('DOMContentLoaded', displaySearchHistory);
+// Function to save search history in localStorage
+function saveSearchHistory(query) {
+    const searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
+    searchHistory.push(query);
+    localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+    displaySearchHistory();
+}
 
+// Function to display search history
+function displaySearchHistory() {
+    const searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
+    const historyContainer = document.getElementById('searchHistory');
+    historyContainer.innerHTML = `<h3>Search History</h3>`;
+    searchHistory.forEach(query => {
+        historyContainer.innerHTML += `<p>${query}</p>`;
+    });
+}
+
+// Function to clear search results
+function clearSearchResults() {
+    document.getElementById('results').innerHTML = '';
+    hideLoader();
+}
+
+// Function to clear search history
+function clearSearchHistory() {
+    localStorage.removeItem('searchHistory');
+    displaySearchHistory();
+}
+
+// Display search history on page load
+document.addEventListener('DOMContentLoaded', () => {
+    displaySearchHistory();
+});

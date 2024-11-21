@@ -22,6 +22,8 @@
             <form id="searchForm" class="form-inline mb-4" onsubmit="return handleSearch(event)">
                 <input type="text" id="searchQuery" class="form-control mr-2" placeholder="Enter your search query" required>
                 <button type="submit" class="btn btn-primary">Search</button>
+                <button type="button" class="btn btn-secondary" onclick="clearSearchResults()">Clear Results</button> <!-- Clear results button -->
+                <button type="button" class="btn btn-secondary" onclick="clearSearchHistory()">Clear History</button> <!-- Clear history button -->
             </form>
 
             <div id="loader" class="loader" style="display: none;"></div>
