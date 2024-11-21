@@ -1,8 +1,13 @@
 Multi-Source Privacy Search Engine
+
+
 Overview
+
+
 The Multi-Source Privacy Search Engine is a privacy-focused search engine that aggregates search results from multiple sources like DuckDuckGo, Pexels (for images), OpenWeatherMap (for weather queries), News API (for news articles), and RandomUser.me (for random user data). It allows users to search across multiple platforms while ensuring privacy and minimizing tracking.
 
 Features
+
 Privacy-Focused: Search securely across multiple platforms without compromising privacy.
 Multi-Source Results: Aggregates results from multiple sources for a comprehensive search experience.
 Weather Integration: Displays weather information with temperature in Fahrenheit.
